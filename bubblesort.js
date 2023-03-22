@@ -16,16 +16,23 @@ function getInstruction(comment: string): string {
 }
 
 export = (app: Probot) => {
-  // app.on("issues.opened", async (context) => {
-  // });
+  // Issues opened
+  app.on("issues.opened", async (context) => {});
+
+  // Pull request opened
   app.on("pull_request.opened", async (context) => {
     await createPullRequestSummary(context);
   });
+
+  // Pull request review comment created
   app.on("pull_request_review_comment.created", async (context) => {
     await processCommand(context);
   });
-  // app.on("issue_comment.created", async (context) => {
-  // });
+
+  // Issue comment created
+  app.on("issue_comment.created", async (context) => {});
+
+  // Any event
   app.onAny(async (context) => {
     await anyEvent(context, app);
   });
