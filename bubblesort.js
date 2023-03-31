@@ -15,6 +15,29 @@ function getInstruction(comment: string): string {
   return comment.slice(comment.indexOf(command) + command.length).trim();
 }
 
+export = (app: Probot) => {
+  // Issues opened
+  app.on("issues.opened", async (context) => {});
+
+  // Pull request opened
+  app.on("pull_request.opened", async (context) => {
+    await createPullRequestSummary(context);
+  });
+
+  // Pull request review comment created
+  app.on("pull_request_review_comment.created", async (context) => {
+    await processCommand(context);
+  });
+
+  // Issue comment created
+  app.on("issue_comment.created", async (context) => {});
+
+  // Any event
+  app.onAny(async (context) => {
+    await anyEvent(context, app);
+  });
+};
+
 async function createPullRequestSummary(context: any) {
   // Get the diff of the pull request
   const { data: diff } = await context.octokit.pulls.get({
@@ -25,6 +48,11 @@ async function createPullRequestSummary(context: any) {
       accept: "application/vnd.github.diff",
     },
   });
+  
+  const command = commands.find((command) => comment.includes(command));
+  if (!command) {
+    return "";
+  }
 
   const commitMessage = await generateCommitMessage(`${diff}`);
 
@@ -55,9 +83,18 @@ async function anyEvent(context: any, app: Probot) {
   const { name, payload } = context;
   const action = "action" in payload ? payload.action : 'unknown';
   app.log.info({ event: name, action: action });
+  
+  const command = commands.find((command) => comment.includes(command));
+  if (!command) {
+    return "";
+  }
 }
 
 export = (app: Probot) => {
+  app.onAny(async (context) => {
+    await anyEvent(context, app);
+  });
+  
   // app.on("issues.opened", async (context) => {
   // });
   app.on("pull_request.opened", async (context) => {
